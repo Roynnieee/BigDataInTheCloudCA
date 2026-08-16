@@ -20,7 +20,7 @@ from the dataset:
 ## Setup
 ```bash
 python3 -m venv venv
-source venv/bin/activate        # Windows: venv\Scripts\activate
+source venv/bin/activate        # Windows: venv\Scripts\activate.ps1
 pip install -r requirements.txt
 python fpgrowth.py
 ```
