@@ -1,0 +1,82 @@
+# IST3134 — Spark FP-Growth: Proper Run Sequence (Final Version)
+# Script: aws_spark_fpgrowth_final.py (full dataset, staged timing output)
+
+============================================================
+Cluster details
+============================================================
+
+Name:              Assignment
+EMR release:       emr-7.13
+Applications:      Spark, Hadoop 
+Primary node:      m5.xlarge  (1 instance)
+Core nodes:        m5.xlarge  (2 instances)
+EC2 key pair:      vockey
+Service role:      EMR_DefaultRole
+EC2 instance role: EMR_EC2_DefaultRole
+
+# ============================================================
+# STEP 1 — On your LOCAL machine (or CloudShell): send the script to the EMR node
+# ============================================================
+scp -i ~/.ssh/vockey.pem aws_spark_fpgrowth_final.py hadoop@<emr-master-dns>:~/
+
+
+# ============================================================
+# STEP 2 — SSH into the EMR master node
+# ============================================================
+ssh -i ~/.ssh/vockey.pem hadoop@<emr-master-dns>
+
+
+# ============================================================
+# STEP 3 — Confirm the file arrived, no placeholder paths, valid syntax
+# ============================================================
+ls -la ~
+grep "your-bucket" aws_spark_fpgrowth_final.py
+
+# ============================================================
+# STEP 4 — Run the script, capturing full output to a log file
+# ============================================================
+spark-submit aws_spark_fpgrowth_.py 2>&1 | tee spark_run_log.txt
+
+
+# ============================================================
+# STEP 5 — Confirm the run completed successfully, view the summary
+# ============================================================
+grep "Done. Results written" spark_run_log.txt
+grep -A 10 "SUMMARY" spark_run_log.txt
+
+
+# ============================================================
+# STEP 6 — Pull the CSV results down from S3 onto the EMR node
+# ============================================================
+aws s3 cp s3://aws-logs-597717962342-us-east-1/results/freq_itemsets_csv/ ./results/freq_itemsets_csv/ --recursive
+aws s3 cp s3://aws-logs-597717962342-us-east-1/results/rules_csv/ ./results/rules_csv/ --recursive
+
+
+# ============================================================
+# STEP 7 — Confirm the result files landed
+# ============================================================
+ls -la results/freq_itemsets_csv/
+ls -la results/rules_csv/
+
+
+# ============================================================
+# STEP 8 — Rename the part files to clean, final filenames
+# ============================================================
+cp results/freq_itemsets_csv/part-*.csv freq_itemsets_final.csv
+cp results/rules_csv/part-*.csv rules_final.csv
+
+
+# ============================================================
+# STEP 9 — Exit back to your LOCAL machine
+# ============================================================
+exit
+
+
+# ============================================================
+# STEP 10 — On your LOCAL machine: pull everything down
+# ============================================================
+scp -i ~/.ssh/vockey.pem hadoop@<emr-master-dns>:~/spark_run_log.txt ./
+scp -i ~/.ssh/vockey.pem hadoop@<emr-master-dns>:~/freq_itemsets_final.csv ./
+scp -i ~/.ssh/vockey.pem hadoop@<emr-master-dns>:~/rules_final.csv ./
+
+
