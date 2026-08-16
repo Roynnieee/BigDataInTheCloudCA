@@ -30,5 +30,5 @@ Results are written to `output/freq_itemsets_mlxtend.csv` and
 `output/rules_mlxtend.csv` after a successful run (matches OUTPUT_DIR in the script).
 
 ## Team
-- Member 1: [name] — [student ID]
-- Member 2: [name] — [student ID]
+- Member 1: [Loo ZiXian] — [22007801]
+- Member 2: [Wong Xu Liang] — [25018565]
