@@ -95,6 +95,7 @@ def main() -> None:
     print(f"One-hot matrix shape: {onehot_df.shape}")
     print(f"One-hot encoding time: {encode_time:.2f}s")
 
+    
     # 4. Run FP-Growth
     t0 = time.time()
     frequent_itemsets = fpgrowth(onehot_df, min_support=MIN_SUPPORT, use_colnames=True)
