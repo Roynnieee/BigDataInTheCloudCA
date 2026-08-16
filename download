@@ -1,0 +1,13 @@
+# Raw dataset - too large for GitHub, download from Kaggle instead (see README)
+*.csv
+!output/*.csv
+
+# Python environment
+venv/
+__pycache__/
+*.pyc
+.venv/
+
+# OS junk
+.DS_Store
+Thumbs.db
