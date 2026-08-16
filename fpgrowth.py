@@ -1,18 +1,8 @@
 """
 FP-Growth Market Basket Analysis with mlxtend (fully local, VS Code / venv)
---------------------------------------------------------------------------------
+
 Dataset : eCommerce behavior data from multi-category store - 2019-Nov.csv
 Source  : https://www.kaggle.com/datasets/mkechinov/ecommerce-behavior-data-from-multi-category-store
-
-This is the local (no-Colab) counterpart to the Colab mlxtend script and the
-AWS Spark script - used for the "compare a non-Big-Data / single-language
-solution to the Big Data one" part of the assignment.
-
-Sampling note: this script loads ALL purchase rows unsampled, groups them
-into baskets (sessions), then samples at the basket level via SAMPLE_FRAC.
-Sampling whole baskets keeps each session intact, unlike sampling raw rows
-before grouping, which can split a session's items across the sampled/
-unsampled boundary and quietly understate real co-purchase patterns.
 
 Setup:
     python3 -m venv venv
@@ -30,9 +20,6 @@ import pandas as pd
 from mlxtend.frequent_patterns import association_rules, fpgrowth
 from mlxtend.preprocessing import TransactionEncoder
 
-# Peak-memory tracking: `resource` gives a true peak (max RSS since process
-# start) but only exists on Unix (Linux/macOS). On Windows, fall back to
-# psutil, which reports current RSS at the point it's checked instead.
 try:
     import resource
 
@@ -44,11 +31,11 @@ except ImportError:
 # ---------------------------------------------------------------------------
 # Config - adjust these for your machine
 # ---------------------------------------------------------------------------
-DATA_PATH = "2019-Nov.csv"      # path to the CSV on your local disk
-OUTPUT_DIR = "./output"                # where result CSVs get written
+DATA_PATH = "2019-Nov.csv"     
+OUTPUT_DIR = "./output"              
 USECOLS = ["event_type", "product_id", "user_session"]
 CHUNKSIZE = 2_000_000
-SAMPLE_FRAC = 1.0                    # fraction of BASKETS to keep (not rows); raise/lower based on your RAM
+SAMPLE_FRAC = 1.0                   
 MIN_SUPPORT = 0.001
 MIN_CONFIDENCE = 0.1
 
@@ -56,9 +43,7 @@ os.makedirs(OUTPUT_DIR, exist_ok=True)
 
 
 def main() -> None:
-    # -----------------------------------------------------------------
     # 1. Load data (chunked, NO sampling here - sample baskets later instead)
-    # -----------------------------------------------------------------
     if not os.path.exists(DATA_PATH):
         raise FileNotFoundError(
             f"Could not find {DATA_PATH}. Download 2019-Nov.csv from Kaggle and "
@@ -76,12 +61,7 @@ def main() -> None:
     print(f"Purchase rows (full, unsampled): {len(purchases_df)}")
     print(f"Data load time: {load_time:.2f}s")
 
-    # -----------------------------------------------------------------
     # 2. Build FULL baskets first, THEN sample at the basket level.
-    #    Sampling whole baskets (not raw rows) keeps each session intact -
-    #    sampling rows first can split a session's items across the
-    #    sampled/unsampled boundary, understating real co-purchase patterns.
-    # -----------------------------------------------------------------
     t0 = time.time()
     baskets_series = purchases_df.groupby("user_session")["product_id"].apply(
         lambda ids: list(set(ids))
@@ -103,9 +83,7 @@ def main() -> None:
             "Consider raising SAMPLE_FRAC."
         )
 
-    # -----------------------------------------------------------------
     # 3. One-hot encode transactions
-    # -----------------------------------------------------------------
     t0 = time.time()
     te = TransactionEncoder()
     te_array = te.fit(transactions).transform(transactions, sparse=True)
@@ -117,9 +95,7 @@ def main() -> None:
     print(f"One-hot matrix shape: {onehot_df.shape}")
     print(f"One-hot encoding time: {encode_time:.2f}s")
 
-    # -----------------------------------------------------------------
     # 4. Run FP-Growth
-    # -----------------------------------------------------------------
     t0 = time.time()
     frequent_itemsets = fpgrowth(onehot_df, min_support=MIN_SUPPORT, use_colnames=True)
     fpgrowth_time = time.time() - t0
@@ -127,18 +103,15 @@ def main() -> None:
     print(f"FP-Growth mining time: {fpgrowth_time:.2f}s")
     print(frequent_itemsets.head(20))
 
-    # -----------------------------------------------------------------
+
     # 5. Association rules
-    # -----------------------------------------------------------------
     rules = association_rules(
         frequent_itemsets, metric="confidence", min_threshold=MIN_CONFIDENCE
     )
     rules = rules.sort_values("confidence", ascending=False)
     print(rules.head(20))
 
-    # -----------------------------------------------------------------
     # 6. Save results locally
-    # -----------------------------------------------------------------
     freq_path = os.path.join(OUTPUT_DIR, "freq_itemsets_mlxtend.csv")
     rules_path = os.path.join(OUTPUT_DIR, "rules_mlxtend.csv")
     frequent_itemsets.to_csv(freq_path, index=False)
@@ -146,9 +119,7 @@ def main() -> None:
     print(f"Saved: {freq_path}")
     print(f"Saved: {rules_path}")
 
-    # -----------------------------------------------------------------
     # 7. Timing summary
-    # -----------------------------------------------------------------
     total = load_time + preprocess_time + encode_time + fpgrowth_time
     print("\n=== Local Python (pandas + mlxtend) Timing Summary ===")
     print(f"Data load:        {load_time:.2f}s")
@@ -157,9 +128,7 @@ def main() -> None:
     print(f"FP-Growth mining: {fpgrowth_time:.2f}s")
     print(f"Total:            {total:.2f}s")
 
-    # -----------------------------------------------------------------
     # 8. Row-count summary across every table in the pipeline
-    # -----------------------------------------------------------------
     print("\n=== Row Counts by Table ===")
     print(f"purchases_df (raw purchase rows, full/unsampled): {len(purchases_df):,}")
     print(f"transactions (multi-item baskets, after basket sampling): {len(transactions):,}")
@@ -167,12 +136,8 @@ def main() -> None:
     print(f"frequent_itemsets:                        {len(frequent_itemsets):,}")
     print(f"rules:                                    {len(rules):,}")
 
-    # -----------------------------------------------------------------
     # 9. Peak memory usage for the whole run
-    # -----------------------------------------------------------------
     if HAS_RESOURCE:
-        # ru_maxrss: max resident set size since process start.
-        # KB on Linux, bytes on macOS - normalize both to MB.
         import sys
 
         peak_raw = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss
